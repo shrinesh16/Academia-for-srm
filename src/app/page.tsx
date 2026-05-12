@@ -2,13 +2,10 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Lock, ArrowRight, Loader2, BookOpen, Clock, Activity, BarChart3, LogOut, GraduationCap, Hash, Building } from "lucide-react";
-import clsx from "clsx";
-import { twMerge } from "tailwind-merge";
-
-function cn(...inputs: (string | undefined | null | false)[]) {
-  return twMerge(clsx(inputs));
-}
+import {
+  ArrowRight, Loader2, BookOpen, Clock, Activity,
+  BarChart3, LogOut, GraduationCap, Hash, Building,
+} from "lucide-react";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -16,174 +13,87 @@ export default function Home() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [netId, setNetId] = useState("");
-  const [password, setPassword] = useState("");
-
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    const formData = new FormData(e.currentTarget);
-    const submittedNetId = formData.get("netId") as string;
-    const submittedPassword = formData.get("password") as string;
-    
+    const fd = new FormData(e.currentTarget);
     setIsLoading(true);
     setErrorMsg("");
-    
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ netId: submittedNetId, password: submittedPassword }),
+        body: JSON.stringify({ netId: fd.get("netId"), password: fd.get("password") }),
       });
-      
       const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to authenticate");
-      }
-      
-      if (data.authenticated) {
-        setDashboardData(data.data);
-        setIsLoggedIn(true);
-      } else {
-        throw new Error("Invalid credentials");
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setDashboardData(null);
-    setNetId("");
-    setPassword("");
+      if (!res.ok) throw new Error(data.error || "Failed to authenticate");
+      if (data.authenticated) { setDashboardData(data.data); setIsLoggedIn(true); }
+      else throw new Error("Invalid credentials");
+    } catch (err: any) { setErrorMsg(err.message || "An error occurred"); }
+    finally { setIsLoading(false); }
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-50 selection:bg-indigo-500/30 overflow-hidden font-sans">
-      {/* Background glowing orbs */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-indigo-600/20 blur-[120px]" />
-        <div className="absolute top-[40%] -right-[10%] w-[40%] h-[60%] rounded-full bg-blue-600/10 blur-[100px]" />
-        <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[40%] rounded-full bg-violet-600/15 blur-[120px]" />
-      </div>
-
-      <div className="relative z-10 min-h-screen">
-        <AnimatePresence mode="wait">
-          {!isLoggedIn ? (
-            <LoginScreen
-              key="login"
-              netId={netId}
-              password={password}
-              setNetId={setNetId}
-              setPassword={setPassword}
-              isLoading={isLoading}
-              onLogin={handleLogin}
-              errorMsg={errorMsg}
-            />
-          ) : (
-            <DashboardScreen key="dashboard" onLogout={handleLogout} data={dashboardData} />
-          )}
-        </AnimatePresence>
-      </div>
+    <main className="min-h-screen bg-background text-foreground">
+      <AnimatePresence mode="wait">
+        {!isLoggedIn ? (
+          <LoginScreen key="login" isLoading={isLoading} onLogin={handleLogin} errorMsg={errorMsg} />
+        ) : (
+          <DashboardScreen key="dash" onLogout={() => { setIsLoggedIn(false); setDashboardData(null); }} data={dashboardData} />
+        )}
+      </AnimatePresence>
     </main>
   );
 }
 
-function LoginScreen({ netId, password, setNetId, setPassword, isLoading, onLogin, errorMsg }: any) {
+/* ━━━━━━━━ LOGIN ━━━━━━━━ */
+function LoginScreen({ isLoading, onLogin, errorMsg }: any) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="flex flex-col items-center justify-center min-h-screen p-4"
-    >
-      <div className="mb-8 text-center space-y-2">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2, type: "spring" }}
-          className="w-16 h-16 bg-gradient-to-tr from-indigo-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/20 mb-6"
-        >
-          <BookOpen className="w-8 h-8 text-white" />
-        </motion.div>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-          Academia Pro
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="flex flex-col items-center justify-center min-h-screen px-4">
+
+      {/* Top-left branding */}
+      <motion.div initial={{ y: -8, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+        className="absolute top-6 left-8 flex items-center gap-2.5">
+        <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+          <BookOpen className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-lg font-semibold tracking-tight">Academia Pro</span>
+      </motion.div>
+
+      {/* Hero heading */}
+      <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15 }}
+        className="text-center mb-10">
+        <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.1] mb-5">
+          Your academics,<br />simplified
         </h1>
-        <p className="text-neutral-400 max-w-sm mx-auto text-sm md:text-base">
-          Sign in with your SRM NetID to access your live academic dashboard.
+        <p className="text-muted text-base md:text-lg">
+          Sign in with your SRM NetID to view your dashboard.
         </p>
-      </div>
+      </motion.div>
 
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="w-full max-w-md backdrop-blur-2xl bg-neutral-900/50 border border-white/10 p-8 rounded-3xl shadow-2xl"
-      >
+      {/* Login card */}
+      <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
+        className="w-full max-w-md bg-card border border-card-border rounded-2xl p-8 shadow-[0_2px_20px_rgba(0,0,0,0.04)]">
         <form onSubmit={onLogin} className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-300 ml-1">NetID</label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <User className="w-5 h-5 text-neutral-500 group-focus-within:text-indigo-400 transition-colors" />
-              </div>
-              <input
-                type="text"
-                name="netId"
-                placeholder="ab1234@srmist.edu.in"
-                className="w-full bg-neutral-950/50 border border-white/5 rounded-2xl py-3 pl-11 pr-4 text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-muted mb-1.5">NetID / Email</label>
+            <input type="text" name="netId" placeholder="ab1234@srmist.edu.in" required
+              className="w-full bg-input-bg border border-input-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted/50 outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all" />
           </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-300 ml-1">Password</label>
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Lock className="w-5 h-5 text-neutral-500 group-focus-within:text-indigo-400 transition-colors" />
-              </div>
-              <input
-                type="password"
-                name="password"
-                placeholder="••••••••"
-                className="w-full bg-neutral-950/50 border border-white/5 rounded-2xl py-3 pl-11 pr-4 text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-muted mb-1.5">Password</label>
+            <input type="password" name="password" placeholder="••••••••" required
+              className="w-full bg-input-bg border border-input-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted/50 outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all" />
           </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full group relative overflow-hidden rounded-2xl bg-indigo-600 px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-          >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Scraping Academia... (~20s)
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </span>
+          <button type="submit" disabled={isLoading}
+            className="w-full bg-btn-dark hover:bg-btn-dark-hover text-white rounded-xl px-4 py-3.5 text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-1">
+            {isLoading
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
+              : <><span>Continue</span> <ArrowRight className="w-4 h-4" /></>}
           </button>
-          
           {errorMsg && (
-            <motion.p 
-              initial={{ opacity: 0, y: -5 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              className="text-rose-400 text-sm text-center font-medium mt-4"
-            >
-              {errorMsg}
-            </motion.p>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="text-danger text-sm text-center font-medium">{errorMsg}</motion.p>
           )}
         </form>
       </motion.div>
@@ -191,316 +101,220 @@ function LoginScreen({ netId, password, setNetId, setPassword, isLoading, onLogi
   );
 }
 
-function DashboardScreen({ onLogout, data }: { onLogout: () => void, data: any }) {
+/* ━━━━━━━━ DASHBOARD ━━━━━━━━ */
+function DashboardScreen({ onLogout, data }: { onLogout: () => void; data: any }) {
   const student = data?.student || { name: "Student", course: "Unknown" };
   const attendance = data?.attendance || { overall: 0, subjects: [] };
   const grades = data?.grades || [];
   const marks = data?.marks || [];
   const schedule = data?.schedule || [];
-
-  const [activeTab, setActiveTab] = useState<"attendance" | "marks" | "schedule">("attendance");
+  const [tab, setTab] = useState<"attendance" | "marks" | "schedule">("attendance");
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto">
+
       {/* Header */}
-      <header className="flex items-center justify-between mb-8 backdrop-blur-md bg-neutral-900/30 border border-white/5 px-6 py-4 rounded-3xl">
+      <header className="flex items-center justify-between mb-8 bg-card border border-card-border rounded-2xl px-6 py-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <GraduationCap className="w-6 h-6 text-white" />
+          <div className="w-11 h-11 bg-accent rounded-xl flex items-center justify-center">
+            <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div>
             <h2 className="text-lg font-bold">{student.name}</h2>
-            <div className="flex items-center gap-3 text-xs text-neutral-400">
+            <div className="flex items-center gap-3 text-xs text-muted">
               <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{student.regNumber || "—"}</span>
               <span className="flex items-center gap-1"><Building className="w-3 h-3" />{student.course}</span>
-              <span>Sem {student.semester} · Batch {student.batch}</span>
+              <span className="hidden md:inline">Sem {student.semester} · Batch {student.batch}</span>
             </div>
           </div>
         </div>
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors border border-white/5"
-        >
-          <LogOut className="w-4 h-4" />
-          <span className="hidden md:inline">Logout</span>
+        <button onClick={onLogout}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-card-border hover:bg-card-border/30 transition-colors">
+          <LogOut className="w-4 h-4" /> <span className="hidden md:inline">Logout</span>
         </button>
       </header>
 
-      {/* Tab Navigation */}
+      {/* Tabs */}
       <div className="flex gap-2 mb-6">
-        {[
-          { key: "attendance" as const, label: "Attendance", icon: Activity },
-          { key: "marks" as const, label: "Internal Marks", icon: BarChart3 },
-          { key: "schedule" as const, label: "Schedule", icon: Clock },
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={cn(
-              "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-medium transition-all",
-              activeTab === tab.key
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"
-                : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white border border-white/5"
-            )}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
+        {([
+          { key: "attendance" as const, label: "Attendance", Icon: Activity },
+          { key: "marks" as const, label: "Internal Marks", Icon: BarChart3 },
+          { key: "schedule" as const, label: "Schedule", Icon: Clock },
+        ]).map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              tab === t.key
+                ? "bg-btn-dark text-white"
+                : "bg-card border border-card-border text-muted hover:text-foreground"
+            }`}>
+            <t.Icon className="w-4 h-4" /> {t.label}
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
+      {/* Tab content */}
       <AnimatePresence mode="wait">
-        {activeTab === "attendance" && (
-          <motion.div
-            key="attendance"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
-            {/* Overall Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <DashboardCard className="relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-[40px]" />
-                <StatRing value={attendance.overall} label="Overall" color="text-indigo-400" />
-              </DashboardCard>
-              {attendance.subjects.slice(0, 3).map((sub: any, i: number) => {
-                const colors = ["text-emerald-400", "text-rose-400", "text-blue-400"];
-                return (
-                  <DashboardCard key={i}>
-                    <StatRing value={sub.percentage} label={sub.code} color={colors[i % colors.length]} />
-                  </DashboardCard>
-                );
-              })}
-            </div>
-
-            {/* Subject-wise attendance table */}
-            <DashboardCard>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-indigo-400" />
-                Subject-wise Attendance
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-neutral-400 border-b border-white/5">
-                      <th className="text-left py-3 px-3 font-medium">Code</th>
-                      <th className="text-left py-3 px-3 font-medium">Subject</th>
-                      <th className="text-left py-3 px-3 font-medium hidden md:table-cell">Category</th>
-                      <th className="text-left py-3 px-3 font-medium hidden lg:table-cell">Faculty</th>
-                      <th className="text-left py-3 px-3 font-medium">Slot</th>
-                      <th className="text-left py-3 px-3 font-medium hidden md:table-cell">Room</th>
-                      <th className="text-right py-3 px-3 font-medium">Attn %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attendance.subjects.map((sub: any, i: number) => (
-                      <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="py-3 px-3 font-mono text-xs text-neutral-300">{sub.code}</td>
-                        <td className="py-3 px-3 font-medium text-white">{sub.name}</td>
-                        <td className="py-3 px-3 hidden md:table-cell">
-                          <span className={cn(
-                            "text-xs px-2 py-1 rounded-lg",
-                            sub.category === "Theory" ? "bg-blue-500/10 text-blue-400" : "bg-purple-500/10 text-purple-400"
-                          )}>
-                            {sub.category}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-neutral-400 hidden lg:table-cell text-xs">{sub.faculty}</td>
-                        <td className="py-3 px-3 text-neutral-300">{sub.slot}</td>
-                        <td className="py-3 px-3 text-neutral-400 hidden md:table-cell">{sub.room}</td>
-                        <td className="py-3 px-3 text-right">
-                          <span className={cn(
-                            "font-bold text-sm",
-                            sub.percentage >= 90 ? "text-emerald-400" :
-                            sub.percentage >= 75 ? "text-yellow-400" :
-                            "text-rose-400"
-                          )}>
-                            {sub.percentage}%
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </DashboardCard>
-          </motion.div>
-        )}
-
-        {activeTab === "marks" && (
-          <motion.div
-            key="marks"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-4"
-          >
-            {marks.length > 0 ? marks.map((m: any, i: number) => (
-              <DashboardCard key={i}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold",
-                      m.courseType === "Theory" ? "bg-blue-500/10 text-blue-400" : "bg-purple-500/10 text-purple-400"
-                    )}>
-                      {m.courseType === "Theory" ? "T" : "P"}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">{m.code}</h4>
-                      <p className="text-xs text-neutral-400">{m.courseType}</p>
-                    </div>
-                  </div>
-                  {grades[i] && (
-                    <div className="text-right">
-                      <div className={cn(
-                        "text-2xl font-bold",
-                        grades[i].percentage >= 80 ? "text-emerald-400" :
-                        grades[i].percentage >= 60 ? "text-yellow-400" :
-                        "text-rose-400"
-                      )}>
-                        {grades[i].percentage}%
-                      </div>
-                      <div className="text-xs text-neutral-400">
-                        {grades[i].totalScored}/{grades[i].totalMax}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {m.tests && m.tests.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {m.tests.map((t: any, j: number) => {
-                      const pct = t.maxMarks > 0 ? (t.scored / t.maxMarks) * 100 : 0;
-                      return (
-                        <div key={j} className="bg-white/5 rounded-xl p-3">
-                          <div className="text-xs text-neutral-400 mb-1 truncate" title={t.testName}>{t.testName}</div>
-                          <div className="flex items-baseline gap-1">
-                            <span className={cn(
-                              "text-lg font-bold",
-                              pct >= 80 ? "text-emerald-400" : pct >= 50 ? "text-yellow-400" : "text-rose-400"
-                            )}>
-                              {t.scored}
-                            </span>
-                            <span className="text-xs text-neutral-500">/ {t.maxMarks}</span>
-                          </div>
-                          <div className="mt-2 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min(pct, 100)}%` }}
-                              transition={{ duration: 1, ease: "easeOut", delay: j * 0.1 }}
-                              className={cn(
-                                "h-full rounded-full",
-                                pct >= 80 ? "bg-emerald-400" : pct >= 50 ? "bg-yellow-400" : "bg-rose-400"
-                              )}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {(!m.tests || m.tests.length === 0) && (
-                  <p className="text-sm text-neutral-500 italic">No marks data available yet</p>
-                )}
-              </DashboardCard>
-            )) : (
-              <DashboardCard>
-                <p className="text-center py-8 text-neutral-500">No marks data available.</p>
-              </DashboardCard>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === "schedule" && (
-          <motion.div
-            key="schedule"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <DashboardCard>
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-blue-400" />
-                Today&apos;s Schedule
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {schedule.length > 0 ? schedule.map((cls: any, i: number) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="p-4 rounded-2xl bg-gradient-to-b from-white/5 to-transparent border border-white/5 hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 transition-all"
-                  >
-                    <div className="text-xs font-medium text-indigo-400 mb-2">{cls.time}</div>
-                    <div className="font-semibold text-white mb-1 text-sm">{cls.name}</div>
-                    <div className="text-sm text-neutral-400">{cls.room}</div>
-                  </motion.div>
-                )) : (
-                  <div className="col-span-4 text-center py-8 text-neutral-500">No classes scheduled for today.</div>
-                )}
-              </div>
-            </DashboardCard>
-          </motion.div>
-        )}
+        {tab === "attendance" && <AttendanceTab key="a" attendance={attendance} />}
+        {tab === "marks" && <MarksTab key="m" marks={marks} grades={grades} />}
+        {tab === "schedule" && <ScheduleTab key="s" schedule={schedule} />}
       </AnimatePresence>
     </motion.div>
   );
 }
 
-function DashboardCard({ children, className }: { children: React.ReactNode; className?: string }) {
+/* ── Attendance Tab ── */
+function AttendanceTab({ attendance }: { attendance: any }) {
+  const ringColors = ["var(--color-accent)", "var(--color-success)", "var(--color-danger)", "#5b7fb5"];
   return (
-    <div
-      className={cn(
-        "bg-neutral-900/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6",
-        className
-      )}
-    >
-      {children}
-    </div>
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card><Ring val={attendance.overall} label="Overall" color={ringColors[0]} /></Card>
+        {attendance.subjects.slice(0, 3).map((s: any, i: number) => (
+          <Card key={i}><Ring val={s.percentage} label={s.code} color={ringColors[(i + 1) % 4]} /></Card>
+        ))}
+      </div>
+      <Card>
+        <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
+          <Activity className="w-4 h-4 text-accent" /> Subject-wise Attendance
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-card-border text-muted text-xs uppercase tracking-wider">
+                <th className="text-left py-3 px-3 font-medium">Code</th>
+                <th className="text-left py-3 px-3 font-medium">Subject</th>
+                <th className="text-left py-3 px-3 font-medium hidden md:table-cell">Category</th>
+                <th className="text-left py-3 px-3 font-medium hidden lg:table-cell">Faculty</th>
+                <th className="text-left py-3 px-3 font-medium hidden md:table-cell">Slot</th>
+                <th className="text-left py-3 px-3 font-medium hidden md:table-cell">Room</th>
+                <th className="text-right py-3 px-3 font-medium">Attn %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attendance.subjects.map((s: any, i: number) => (
+                <tr key={i} className="border-b border-card-border hover:bg-foreground/[0.02] transition-colors">
+                  <td className="py-3 px-3 font-mono text-xs text-muted">{s.code}</td>
+                  <td className="py-3 px-3 font-medium">{s.name}</td>
+                  <td className="py-3 px-3 hidden md:table-cell">
+                    <span className={`text-xs px-2 py-1 rounded-lg ${s.category === "Theory" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                      {s.category}
+                    </span>
+                  </td>
+                  <td className="py-3 px-3 hidden lg:table-cell text-xs text-muted">{s.faculty}</td>
+                  <td className="py-3 px-3 hidden md:table-cell">{s.slot}</td>
+                  <td className="py-3 px-3 hidden md:table-cell text-muted">{s.room}</td>
+                  <td className="py-3 px-3 text-right">
+                    <span className={`font-bold text-sm ${s.percentage >= 90 ? "text-success" : s.percentage >= 75 ? "text-warning" : "text-danger"}`}>
+                      {s.percentage}%
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </motion.div>
   );
 }
 
-function StatRing({ value, label, color }: { value: number; label: string; color: string }) {
-  const circumference = 2 * Math.PI * 38;
-  const strokeDashoffset = circumference - (value / 100) * circumference;
+/* ── Marks Tab ── */
+function MarksTab({ marks, grades }: { marks: any[]; grades: any[] }) {
+  if (marks.length === 0) return <Card><p className="text-center py-8 text-muted">No marks data available.</p></Card>;
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+      {marks.map((m: any, i: number) => (
+        <Card key={i}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${m.courseType === "Theory" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                {m.courseType === "Theory" ? "T" : "P"}
+              </div>
+              <div>
+                <h4 className="font-semibold">{m.code}</h4>
+                <p className="text-xs text-muted">{m.courseType}</p>
+              </div>
+            </div>
+            {grades[i] && (
+              <div className="text-right">
+                <div className={`text-2xl font-bold ${grades[i].percentage >= 80 ? "text-success" : grades[i].percentage >= 60 ? "text-warning" : "text-danger"}`}>
+                  {grades[i].percentage}%
+                </div>
+                <div className="text-xs text-muted">{grades[i].totalScored}/{grades[i].totalMax}</div>
+              </div>
+            )}
+          </div>
+          {m.tests?.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {m.tests.map((t: any, j: number) => {
+                const p = t.maxMarks > 0 ? (t.scored / t.maxMarks) * 100 : 0;
+                return (
+                  <div key={j} className="bg-input-bg border border-card-border rounded-xl p-3">
+                    <div className="text-xs text-muted mb-1 truncate" title={t.testName}>{t.testName}</div>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-lg font-bold ${p >= 80 ? "text-success" : p >= 50 ? "text-warning" : "text-danger"}`}>{t.scored}</span>
+                      <span className="text-xs text-muted">/ {t.maxMarks}</span>
+                    </div>
+                    <div className="mt-2 h-1.5 bg-card-border rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(p, 100)}%` }}
+                        transition={{ duration: 1, ease: "easeOut", delay: j * 0.1 }}
+                        className={`h-full rounded-full ${p >= 80 ? "bg-success" : p >= 50 ? "bg-warning" : "bg-danger"}`} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : <p className="text-sm text-muted italic">No marks data available yet</p>}
+        </Card>
+      ))}
+    </motion.div>
+  );
+}
 
+/* ── Schedule Tab ── */
+function ScheduleTab({ schedule }: { schedule: any[] }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+      <Card>
+        <h3 className="text-base font-semibold mb-6 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-accent" /> Today&apos;s Schedule
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {schedule.length > 0 ? schedule.map((c: any, i: number) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
+              className="bg-input-bg border border-card-border rounded-xl p-4 hover:shadow-md transition-all">
+              <div className="text-xs font-medium text-accent mb-2">{c.time}</div>
+              <div className="font-semibold text-sm mb-1">{c.name}</div>
+              <div className="text-sm text-muted">{c.room}</div>
+            </motion.div>
+          )) : <div className="col-span-4 text-center py-8 text-muted">No classes scheduled.</div>}
+        </div>
+      </Card>
+    </motion.div>
+  );
+}
+
+/* ━━━ Shared ━━━ */
+function Card({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={`bg-card border border-card-border rounded-2xl p-6 ${className || ""}`}>{children}</div>;
+}
+
+function Ring({ val, label, color }: { val: number; label: string; color: string }) {
+  const c = 2 * Math.PI * 38;
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="relative flex items-center justify-center">
-        <svg className="w-24 h-24 transform -rotate-90">
-          <circle
-            className="text-white/5"
-            strokeWidth="8"
-            stroke="currentColor"
-            fill="transparent"
-            r="38"
-            cx="48"
-            cy="48"
-          />
-          <motion.circle
-            className={color}
-            strokeWidth="8"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset }}
-            transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
-            strokeLinecap="round"
-            stroke="currentColor"
-            fill="transparent"
-            r="38"
-            cx="48"
-            cy="48"
-          />
+        <svg className="w-24 h-24 -rotate-90">
+          <circle strokeWidth="8" stroke="var(--color-card-border)" fill="transparent" r="38" cx="48" cy="48" />
+          <motion.circle strokeWidth="8" strokeDasharray={c}
+            initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: c - (val / 100) * c }}
+            transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+            strokeLinecap="round" stroke={color} fill="transparent" r="38" cx="48" cy="48" />
         </svg>
-        <span className="absolute text-xl font-bold">{value}%</span>
+        <span className="absolute text-xl font-bold">{val}%</span>
       </div>
-      <span className="text-sm font-medium text-neutral-400">{label}</span>
+      <span className="text-sm font-medium text-muted">{label}</span>
     </div>
   );
 }
