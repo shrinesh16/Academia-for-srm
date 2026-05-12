@@ -1,5 +1,5 @@
 ## AcademiaPro
-Replacement for srmist academia website
+Replacement for srmist academia website with claude inspired user-interface
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
